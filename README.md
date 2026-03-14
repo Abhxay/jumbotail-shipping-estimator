@@ -98,11 +98,11 @@ Password:  (leave empty)
 
 ### API 1 — Get Nearest Warehouse for a Seller
 ```
-GET /api/v1/warehouse/nearest?sellerId={id}
+GET /api/v1/warehouse/nearest?sellerId={id}&productId={id}
 ```
 **Sample Request:**
 ```
-GET /api/v1/warehouse/nearest?sellerId=1
+GET /api/v1/warehouse/nearest?sellerId=1&productId=1
 ```
 **Sample Response:**
 ```json
@@ -115,6 +115,9 @@ GET /api/v1/warehouse/nearest?sellerId=1
   "state": "Karnataka"
 }
 ```
+> **Note:** Nearest warehouse is determined by the seller's location
+> using the Haversine Formula. productId is accepted per API contract
+> but warehouse selection depends on seller coordinates only.
 
 ---
 

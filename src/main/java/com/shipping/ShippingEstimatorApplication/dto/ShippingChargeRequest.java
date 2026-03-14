@@ -15,7 +15,7 @@ public class ShippingChargeRequest {
     private Long customerId;
 
     @NotNull(message = "productId is required")
-    private Long productId;                    // ← ADD THIS
+    private Long productId;                    
 
     @NotNull(message = "deliverySpeed is required")
     @Pattern(
