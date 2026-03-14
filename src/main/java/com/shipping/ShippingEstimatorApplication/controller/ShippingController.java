@@ -38,9 +38,7 @@ public class ShippingController {
     @PostMapping("/calculate")
     public ResponseEntity<ShippingChargeResponse> calculateShippingCharge(
             @Valid @RequestBody ShippingChargeRequest request) {
-        //  ↑           ↑
-        // @Valid        triggers @NotNull/@Pattern validation on the request
-        // @RequestBody  reads JSON body and maps it to ShippingChargeRequest
+
 
         ShippingChargeResponse response =
                 shippingService.calculateFullShippingCharge(request);
