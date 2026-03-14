@@ -1,7 +1,11 @@
 package com.shipping.ShippingEstimatorApplication.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TransportModeUtil {
 
+    private static final Logger log = LoggerFactory.getLogger(TransportModeUtil.class);
 
     private static final double AEROPLANE_RATE = 1.0;
     private static final double TRUCK_RATE      = 2.0;
@@ -28,10 +32,8 @@ public class TransportModeUtil {
             mode = "MINI_VAN";
         }
 
-        System.out.println("Transport Mode Selected: " + mode
-                + " | Distance: " + distanceKm + " km"
-                + " | Weight: " + weightKg + " kg"
-                + " | Rate: Rs" + rate + "/km/kg");
+        log.info("Transport Mode: {} | Distance: {} km | Weight: {} kg | Rate: Rs{}/km/kg",
+                mode, distanceKm, weightKg, rate);
 
         // Formula: distance × weight × rate
         return distanceKm * weightKg * rate;

@@ -15,6 +15,7 @@ import com.shipping.ShippingEstimatorApplication.util.HaversineUtil;
 import com.shipping.ShippingEstimatorApplication.util.TransportModeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 @Service
 public class ShippingService {
@@ -83,7 +84,10 @@ public class ShippingService {
                 .build();
     }
 
-
+    @Cacheable(
+            value = "shippingCharge",
+            key   = "#request.sellerId + '-' + #request.customerId + '-' + #request.productId + '-' + #request.deliverySpeed"
+    )
     public ShippingChargeResponse calculateFullShippingCharge(
             ShippingChargeRequest request) {
 

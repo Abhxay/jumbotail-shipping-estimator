@@ -8,14 +8,18 @@ import com.shipping.ShippingEstimatorApplication.exception.ResourceNotFoundExcep
 import com.shipping.ShippingEstimatorApplication.repository.SellerRepository;
 import com.shipping.ShippingEstimatorApplication.repository.WarehouseRepository;
 import com.shipping.ShippingEstimatorApplication.util.HaversineUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 
 @Service
 public class WarehouseService {
 
+    private static final Logger log = LoggerFactory.getLogger(WarehouseService.class);
 
     @Autowired
     private WarehouseRepository warehouseRepository;
@@ -23,7 +27,7 @@ public class WarehouseService {
     @Autowired
     private SellerRepository sellerRepository;
 
-
+    @Cacheable(value = "nearestWarehouse", key = "#sellerId")
     public NearestWarehouseResponse findNearestWarehouse(Long sellerId) {
 
 
@@ -66,9 +70,11 @@ public class WarehouseService {
                     warehouse.getLatitude(), warehouse.getLongitude()
             );
 
-            System.out.println("Distance from seller '" + seller.getName()
-                    + "' to '" + warehouse.getName()
-                    + "': " + String.format("%.2f", distanceKm) + " km");
+            log.info("Distance from seller '{}' to '{}': {} km",
+                    seller.getName(),
+                    warehouse.getName(),
+                    String.format("%.2f", distanceKm));
+
 
             if (distanceKm < shortestDistKm) {
                 shortestDistKm = distanceKm;
@@ -76,10 +82,11 @@ public class WarehouseService {
             }
         }
 
-        System.out.println("Nearest warehouse selected: " + nearest.getName());
+        log.info("Nearest warehouse selected: {}", nearest.getName());
         return nearest;
     }
 
+    @Cacheable(value = "nearestWarehouseEntity", key = "#sellerId")
     public Warehouse findNearestWarehouseEntity(Long sellerId) {
 
         Seller seller = sellerRepository.findById(sellerId)
