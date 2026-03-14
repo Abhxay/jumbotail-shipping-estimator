@@ -118,7 +118,6 @@ GET /api/v1/warehouse/nearest?sellerId=1&productId=1
 > **Note:** Nearest warehouse is determined by the seller's location
 > using the Haversine Formula. productId is accepted per API contract
 > but warehouse selection depends on seller coordinates only.
-```
 
 ---
 
