@@ -211,7 +211,7 @@ All errors return a consistent JSON structure:
 ### Postman Collection
 All APIs are documented and testable via the public Postman collection:
 
-https://abhay-8701139.postman.co/workspace/Abhay's-Workspace~c8b7a01e-e092-41ff-8b96-5e80b3b5159f/collection/46299576-b0ad497c-d0f0-4899-a2b7-c872a2feffd1?action=share&creator=46299576
+postman.com/abhay-8701139/workspace/postman-api-fundamentals-student-expert/collection/46299576-b0ad497c-d0f0-4899-a2b7-c872a2feffd1?action=share&creator=46299576
 
 ### Seed Data Reference
 Use these IDs when testing:
