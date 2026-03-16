@@ -1,7 +1,6 @@
 # 🚚 Shipping Charge Estimator — Jumbotail Assignment
 
-A Spring Boot REST API that calculates shipping charges for a B2B
-e-commerce marketplace serving Kirana stores across India.
+A Spring Boot REST API that calculates shipping charges for a B2B e-commerce marketplace serving Kirana stores across India.
 
 ---
 
@@ -19,37 +18,52 @@ e-commerce marketplace serving Kirana stores across India.
 ---
 
 ## 📐 Architecture
-```
+
 Request → Controller → Service → Repository → H2 Database
-                    ↘ Utils (Haversine, TransportMode, DeliverySpeed)
-```
+↘ Strategy + Utils (Haversine, DeliverySpeed)
 
 **Layered Architecture:**
 - **Controller** — Receives HTTP requests, validates input, returns responses
 - **Service** — All business logic lives here
 - **Repository** — Data access via Spring Data JPA (zero SQL written)
+- **Strategy** — Transport mode selection via Strategy Pattern
 - **Utils** — Pure stateless calculation helpers
 - **DTOs** — Clean API contracts, DB internals never exposed
 - **GlobalExceptionHandler** — All errors handled in one place
 
 ---
 
+## 🏛️ Design Patterns Used
+
+### 1. Strategy Pattern — Transport Mode Selection
+Each transport mode (Aeroplane, Truck, Mini Van) is a separate class implementing the `ShippingCostStrategy` interface. `ShippingStrategyResolver` picks the correct strategy based on distance.
+
+ShippingCostStrategy (interface)
+├── AeroplaneShippingStrategy  → ₹1/km/kg  (500km+)
+├── TruckShippingStrategy      → ₹2/km/kg  (100–499km)
+└── MiniVanShippingStrategy    → ₹3/km/kg  (0–99km)
+
+**Benefit:** Adding a new transport mode (e.g. Drone) requires only a new class — zero changes to existing code.
+
+### 2. Layered Architecture Pattern
+Controller → Service → Repository separation ensures each layer has a single responsibility and can be tested independently.
+
+---
+
 ## 🗂️ Entity Model
-```
+
 Seller ──< Product        (One seller has many products)
 Warehouse                 (Independent — located across India)
 Customer                  (Kirana stores with GPS coordinates)
-```
 
 ---
 
 ## ⚙️ How Shipping Is Calculated
 
 ### Step 1 — Find Nearest Warehouse
-Seller drops product at the nearest warehouse.
-Distance calculated using the **Haversine Formula** (accounts for Earth's curvature).
+Seller drops product at the nearest warehouse. Distance is calculated using the **Haversine Formula** which accounts for Earth's curvature to give accurate GPS-based distances.
 
-### Step 2 — Select Transport Mode
+### Step 2 — Select Transport Mode (Strategy Pattern)
 | Distance        | Mode       | Rate            |
 |-----------------|------------|-----------------|
 | 500 km+         | Aeroplane  | ₹1 / km / kg   |
@@ -57,10 +71,10 @@ Distance calculated using the **Haversine Formula** (accounts for Earth's curvat
 | 0 – 99 km       | Mini Van   | ₹3 / km / kg   |
 
 ### Step 3 — Apply Delivery Speed
-| Speed    | Charge Formula                               |
-|----------|----------------------------------------------|
-| Standard | ₹10 flat + base shipping charge              |
-| Express  | ₹10 flat + ₹1.2/kg extra + base shipping charge |
+| Speed    | Charge Formula                                           |
+|----------|----------------------------------------------------------|
+| Standard | ₹10 flat + base shipping charge                          |
+| Express  | ₹10 flat + ₹1.2/kg express charge + base shipping charge |
 
 ---
 
@@ -71,128 +85,116 @@ Distance calculated using the **Haversine Formula** (accounts for Earth's curvat
 - Maven 3.8+
 
 ### Steps
-```bash
+
 # 1. Clone the repo
-git clone <your-repo-url>
+git clone https://github.com/Abhxay/jumbotail-shipping-estimator.git
 
 # 2. Navigate into project
-cd ShippingEstimatorApplication
+cd jumbotail-shipping-estimator
 
 # 3. Run the app
 mvn spring-boot:run
-```
 
-App starts at: `http://localhost:8080`
+App starts at: http://localhost:8080
 
-### View The Database
-Visit `http://localhost:8080/h2-console`
-```
+### View The Database (H2 Console)
+Visit http://localhost:8080/h2-console
+
 JDBC URL:  jdbc:h2:mem:shippingdb
 Username:  sa
 Password:  (leave empty)
-```
 
 ---
 
 ## 📡 API Reference
 
 ### API 1 — Get Nearest Warehouse for a Seller
-```
+
 GET /api/v1/warehouse/nearest?sellerId={id}&productId={id}
-```
-**Sample Request:**
-```
+
+Sample Request:
 GET /api/v1/warehouse/nearest?sellerId=1&productId=1
-```
-**Sample Response:**
-```json
+
+Sample Response:
 {
-  "warehouseId": 1,
-  "warehouseName": "BLR_Warehouse",
-  "latitude": 12.99999,
-  "longitude": 77.92327,
-  "city": "Bangalore",
-  "state": "Karnataka"
+"warehouseId": 1,
+"warehouseName": "BLR_Warehouse",
+"latitude": 12.99999,
+"longitude": 77.92327,
+"city": "Bangalore",
+"state": "Karnataka"
 }
-```
-> **Note:** Nearest warehouse is determined by the seller's location
-> using the Haversine Formula. productId is accepted per API contract
-> but warehouse selection depends on seller coordinates only.
+
+> **Design Note:** Nearest warehouse is determined by the seller's GPS coordinates using the Haversine Formula. productId is accepted per API contract but warehouse selection depends on seller location only.
 
 ---
 
 ### API 2 — Get Shipping Charge from Warehouse to Customer
-```
+
 GET /api/v1/shipping-charge?warehouseId={id}&customerId={id}&productId={id}&deliverySpeed={speed}
-```
-**Sample Request:**
-```
+
+Sample Request:
 GET /api/v1/shipping-charge?warehouseId=1&customerId=1&productId=1&deliverySpeed=standard
-```
-**Sample Response:**
-```json
+
+Sample Response:
 {
-  "shippingCharge": 520.50,
-  "transportMode": "TRUCK",
-  "distanceKm": 254.43,
-  "deliverySpeed": "standard",
-  "nearestWarehouse": {
-    "warehouseId": 1,
-    "warehouseName": "BLR_Warehouse",
-    "latitude": 12.99999,
-    "longitude": 77.92327,
-    "city": "Bangalore",
-    "state": "Karnataka"
-  }
+"shippingCharge": 520.50,
+"transportMode": "TRUCK",
+"distanceKm": 254.43,
+"deliverySpeed": "standard",
+"nearestWarehouse": {
+"warehouseId": 1,
+"warehouseName": "BLR_Warehouse",
+"latitude": 12.99999,
+"longitude": 77.92327,
+"city": "Bangalore",
+"state": "Karnataka"
 }
-```
+}
+
+> **Design Note:** productId is required beyond the original spec because product weight is essential to calculate shipping charge accurately.
 
 ---
 
 ### API 3 — Full Shipping Charge Calculation
-```
+
 POST /api/v1/shipping-charge/calculate
 Content-Type: application/json
-```
-**Sample Request Body:**
-```json
+
+Sample Request Body:
 {
-  "sellerId": 1,
-  "customerId": 1,
-  "productId": 2,
-  "deliverySpeed": "express"
+"sellerId": 1,
+"customerId": 1,
+"productId": 2,
+"deliverySpeed": "express"
 }
-```
-**Sample Response:**
-```json
+
+Sample Response:
 {
-  "shippingCharge": 5098.60,
-  "transportMode": "AEROPLANE",
-  "distanceKm": 498.43,
-  "deliverySpeed": "express",
-  "nearestWarehouse": {
-    "warehouseId": 1,
-    "warehouseName": "BLR_Warehouse",
-    "latitude": 12.99999,
-    "longitude": 77.92327,
-    "city": "Bangalore",
-    "state": "Karnataka"
-  }
+"shippingCharge": 5098.60,
+"transportMode": "AEROPLANE",
+"distanceKm": 498.43,
+"deliverySpeed": "express",
+"nearestWarehouse": {
+"warehouseId": 1,
+"warehouseName": "BLR_Warehouse",
+"latitude": 12.99999,
+"longitude": 77.92327,
+"city": "Bangalore",
+"state": "Karnataka"
 }
-```
+}
 
 ---
 
 ## ❌ Error Handling
 
-All errors return consistent JSON:
-```json
+All errors return a consistent JSON structure:
 {
-  "timestamp": "2026-03-15T10:30:00",
-  "status": 404,
-  "error": "Seller not found with id: 999"
+"timestamp": "2026-03-15T10:30:00",
+"status": 404,
+"error": "Seller not found with id: 999"
 }
-```
 
 | Scenario                    | HTTP Status |
 |-----------------------------|-------------|
@@ -204,29 +206,49 @@ All errors return consistent JSON:
 
 ---
 
-## 🧪 Running Tests
-```bash
+## 🧪 API Testing
+
+### Postman Collection
+All APIs are documented and testable via the public Postman collection:
+
+https://abhay-8701139.postman.co/workspace/Abhay's-Workspace~c8b7a01e-e092-41ff-8b96-5e80b3b5159f/collection/46299576-b0ad497c-d0f0-4899-a2b7-c872a2feffd1?action=share&creator=46299576
+
+### Seed Data Reference
+Use these IDs when testing:
+
+| Entity    | ID | Name                |
+|-----------|----|---------------------|
+| Seller    | 1  | Nestle Seller       |
+| Seller    | 2  | Rice Seller         |
+| Seller    | 3  | Sugar Seller        |
+| Customer  | 1  | Shree Kirana Store  |
+| Customer  | 2  | Andheri Mini Mart   |
+| Product   | 1  | Maggie 500g (0.5kg) |
+| Product   | 2  | Rice Bag 10kg       |
+| Product   | 3  | Sugar Bag 25kg      |
+| Warehouse | 1  | BLR_Warehouse       |
+| Warehouse | 2  | MUMB_Warehouse      |
+
+### Running Unit Tests
+
 mvn test
-```
-```
+
 Tests run: 13, Failures: 0, Errors: 0
 ✅ WarehouseServiceTest  (4 tests)
 ✅ HaversineUtilTest     (9 tests)
-```
 
 ---
 
-## 📦 Seed Data (Preloaded)
+## 📦 Seed Data (Preloaded on Startup)
 
-| Type      | Records                                      |
-|-----------|----------------------------------------------|
-| Warehouse | BLR_Warehouse (Bangalore), MUMB_Warehouse (Mumbai) |
+| Type      | Records                                                             |
+|-----------|---------------------------------------------------------------------|
+| Warehouse | BLR_Warehouse (Bangalore), MUMB_Warehouse (Mumbai)                  |
 | Seller    | Nestle Seller (Chennai), Rice Seller (Mumbai), Sugar Seller (Delhi) |
-| Customer  | Shree Kirana Store, Andheri Mini Mart        |
-| Product   | Maggie 500g, Rice Bag 10kg, Sugar Bag 25kg   |
+| Customer  | Shree Kirana Store (Faridabad), Andheri Mini Mart (Mumbai)          |
+| Product   | Maggie 500g (0.5kg), Rice Bag 10kg, Sugar Bag 25kg                  |
 
 ---
 
 ## 👤 Abhay Thakur
 Built as part of the Jumbotail Backend Engineering Assignment.
-
